@@ -12,11 +12,12 @@ let radiusX, radiusY;
 let currentLoop = null;
 let currentLoopIndex = -1;
 
-// cores por loop
+// cores por loop (4)
 let loopColors = [
-  [255, 120, 40],   // laranja
-  [60, 140, 255],   // azul
-  [80, 200, 120]    // verde
+  [255, 120, 40],   // loop1: laranja
+  [60, 140, 255],   // loop2: azul
+  [80, 200, 120],   // loop3: verde
+  [255, 80, 180]    // loop4: rosa
 ];
 
 // velocidade do rato
@@ -39,6 +40,7 @@ function preload() {
   loops[0] = loadSound("sounds/loop1.mp3");
   loops[1] = loadSound("sounds/loop2.mp3");
   loops[2] = loadSound("sounds/loop3.mp3");
+  loops[3] = loadSound("sounds/loop4.mp3"); // ✅ novo
 
   agudos[0] = loadSound("sounds/agudo1.mp3");
 }
@@ -58,7 +60,7 @@ function setup() {
 
   agudos.forEach(s => {
     s.disconnect();
-    s.connect();
+    s.connect(); // sem filtro
     s.setVolume(0);
   });
 
@@ -119,7 +121,6 @@ function draw() {
 
     noStroke();
     for (let c of clouds) {
-      // deslocamento suave em direção ao rato
       let dx = nx * motion * 10;
       let dy = ny * motion * 10;
 
@@ -129,6 +130,7 @@ function draw() {
       // máscara elíptica manual
       let ex = (cx - centerX) / radiusX;
       let ey = (cy - centerY) / radiusY;
+
       if (ex * ex + ey * ey < 1) {
         let alpha = 12 + sin(frameCount * 0.02 + c.offset) * 10;
         fill(col[0], col[1], col[2], alpha);
@@ -150,8 +152,11 @@ function draw() {
 
   if (started && inside) {
     // pitch com velocidade
-    let pitch = map(speed, 0, 30, 1.0, 2.5, true);
-    if (currentLoop) currentLoop.rate(pitch);
+    let t = constrain(speed / 30, 0, 1);  // 0..1
+t = pow(t, 3.0);                      // exponencial (ajusta 3.0 se quiseres)
+let pitch = 1.0 + t * (2.5 - 1.0);    // 1.0..2.5
+if (currentLoop) currentLoop.rate(pitch);
+
 
     // filtro radial
     let freq = map(d, 0, 1, 4000, 600);
@@ -180,7 +185,6 @@ function draw() {
     if (trail.length > maxTrail) {
       trail.splice(0, trail.length - maxTrail);
     }
-
   } else {
     stopCurrentLoop();
   }
@@ -217,7 +221,7 @@ function mousePressed() {
     let s = random(agudos);
     s.stop();
     s.pan(constrain(nx, -1, 1));
-    s.setVolume(0.45); // −5 dB aprox
+    s.setVolume(0.45); // ~ -5 dB
     s.play();
 
     stopCurrentLoop();
