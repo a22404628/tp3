@@ -80,7 +80,18 @@ function setup() {
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+  const holder = document.getElementById("sketch-holder");
+  const w = holder.offsetWidth || windowWidth;
+  const h = holder.offsetHeight || windowHeight;
+  resizeCanvas(w, h);
+  calculateEllipse();
+  function setup() {
+  const holder = document.getElementById("sketch-holder");
+  const w = holder.offsetWidth || windowWidth;
+  const h = holder.offsetHeight || windowHeight;
+
+  let c = createCanvas(w, h);
+  c.parent("sketch-holder");
   calculateEllipse();
 }
 
@@ -246,4 +257,5 @@ function stopCurrentLoop() {
     currentLoopIndex = -1;
   }
 }
+
 
