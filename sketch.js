@@ -55,7 +55,8 @@ function draw() {
   clear();
 
   noFill();
-  stroke(0);
+  stroke(57, 255, 20);
+  strokeWeight(3);
   ellipse(centerX, centerY, radius * 2, radius * 2);
 
   let d = dist(mouseX, mouseY, centerX, centerY);
@@ -130,4 +131,5 @@ function stopCurrentLoop() {
     currentLoop = null;
   }
 }
+
 
