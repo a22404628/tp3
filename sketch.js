@@ -5,7 +5,7 @@ let filter;
 let started = false;
 let loaded = false;
 
-// play area (elipse responsiva)
+// play area
 let centerX, centerY;
 let radiusX, radiusY;
 
@@ -40,17 +40,22 @@ function preload() {
   loops[0] = loadSound("sounds/loop1.mp3");
   loops[1] = loadSound("sounds/loop2.mp3");
   loops[2] = loadSound("sounds/loop3.mp3");
-  loops[3] = loadSound("sounds/loop4.mp3"); // ✅ novo
+  loops[3] = loadSound("sounds/loop4.mp3");
 
   agudos[0] = loadSound("sounds/agudo1.mp3");
 }
 
 function setup() {
-  let c = createCanvas(windowWidth, windowHeight);
-  c.parent(document.body);
+  const holder = document.getElementById("sketch-holder");
+  const w = holder?.offsetWidth || windowWidth;
+  const h = holder?.offsetHeight || windowHeight;
+
+  const c = createCanvas(w, h);
+  c.parent("sketch-holder");
 
   filter = new p5.LowPass();
 
+  // loops passam pelo filtro
   loops.forEach(s => {
     s.disconnect();
     s.connect(filter);
@@ -58,15 +63,41 @@ function setup() {
     s.rate(1);
   });
 
+  // agudos vão diretos ao master (sem filtro)
   agudos.forEach(s => {
     s.disconnect();
-    s.connect(); // sem filtro
+    s.connect();
     s.setVolume(0);
   });
 
   calculateEllipse();
+  generateClouds();
 
-  // gerar nuvens (campo geométrico)
+  loaded = true;
+}
+
+function windowResized() {
+  const holder = document.getElementById("sketch-holder");
+  const w = holder?.offsetWidth || windowWidth;
+  const h = holder?.offsetHeight || windowHeight;
+
+  resizeCanvas(w, h);
+  calculateEllipse();
+  generateClouds(); // re-cria nuvens para o novo tamanho
+}
+
+function calculateEllipse() {
+  // usa width/height do canvas (não windowWidth/windowHeight)
+  radiusX = width * 0.35;
+  radiusY = height * 0.2;
+
+  // canto superior esquerdo
+  centerX = radiusX + 20;
+  centerY = radiusY + 20;
+}
+
+function generateClouds() {
+  clouds = [];
   for (let i = 0; i < 30; i++) {
     clouds.push({
       x: random(-radiusX, radiusX),
@@ -75,33 +106,6 @@ function setup() {
       offset: random(1000)
     });
   }
-
-  loaded = true;
-}
-
-function windowResized() {
-  const holder = document.getElementById("sketch-holder");
-  const w = holder.offsetWidth || windowWidth;
-  const h = holder.offsetHeight || windowHeight;
-  resizeCanvas(w, h);
-  calculateEllipse();
-  }
-  function setup() {
-  const holder = document.getElementById("sketch-holder");
-  const w = holder.offsetWidth || windowWidth;
-  const h = holder.offsetHeight || windowHeight;
-
-  let c = createCanvas(w, h);
-  c.parent("sketch-holder");
-  calculateEllipse();
-}
-
-function calculateEllipse() {
-  radiusX = windowWidth * 0.35;
-  radiusY = windowHeight * 0.2;
-
-  centerX = radiusX + 20;
-  centerY = radiusY + 20;
 }
 
 function draw() {
@@ -114,7 +118,7 @@ function draw() {
 
   let speed = dist(mouseX, mouseY, prevX, prevY);
 
-  // --- CAMADA 1: COR BASE DA ELIPSE ---
+  // CAMADA 1: cor base
   if (currentLoopIndex !== -1) {
     let col = loopColors[currentLoopIndex];
     let alpha = map(d, 0, 1, 60, 25);
@@ -124,7 +128,7 @@ function draw() {
     ellipse(centerX, centerY, radiusX * 2, radiusY * 2);
   }
 
-  // --- CAMADA 2: FUNDO NUBLADO (SÓ DENTRO DA ELIPSE) ---
+  // CAMADA 2: nuvens (aditivo, só dentro)
   if (currentLoopIndex !== -1 && inside) {
     pulsePhase += 0.01;
 
@@ -139,7 +143,6 @@ function draw() {
       let cx = centerX + c.x + dx * sin(frameCount * 0.01 + c.offset);
       let cy = centerY + c.y + dy * cos(frameCount * 0.01 + c.offset);
 
-      // máscara elíptica manual
       let ex = (cx - centerX) / radiusX;
       let ey = (cy - centerY) / radiusY;
 
@@ -154,27 +157,27 @@ function draw() {
   // contorno da elipse
   noFill();
   stroke(57, 255, 20);
-  strokeWeight(3)
+  strokeWeight(3);
   ellipse(centerX, centerY, radiusX * 2, radiusY * 2);
 
-  // marcador do centro (estado base)
+  // marcador do centro
   let cp = sin(frameCount * 0.03) * 2;
   noStroke();
   fill(0);
   ellipse(centerX, centerY, 10 + cp, 10 + cp);
 
   if (started && inside) {
-    // pitch com velocidade
-    let t = constrain(speed / 30, 0, 1);  // 0..1
-t = pow(t, 3.0);                      // exponencial (ajusta 3.0 se quiseres)
-let pitch = 1.0 + t * (2.5 - 1.0);    // 1.0..2.5
-if (currentLoop) currentLoop.rate(pitch);
-
+    // pitch exponencial (quase nada em lento, óbvio em rápido)
+    let t = constrain(speed / 30, 0, 1);
+    t = pow(t, 3.0);
+    let pitch = 1.0 + t * (2.5 - 1.0);
+    if (currentLoop) currentLoop.rate(pitch);
 
     // filtro radial
     let freq = map(d, 0, 1, 4000, 600);
     filter.freq(freq);
 
+    // pan horizontal
     let pan = constrain(nx, -1, 1);
 
     if (!currentLoop) {
@@ -186,10 +189,10 @@ if (currentLoop) currentLoop.rate(pitch);
     // rasto
     let steps = floor(map(speed, 0, 30, 1, 6, true));
     for (let i = 0; i < steps; i++) {
-      let t = i / steps;
+      let tt = i / steps;
       trail.push({
-        x: lerp(prevX, mouseX, t),
-        y: lerp(prevY, mouseY, t),
+        x: lerp(prevX, mouseX, tt),
+        y: lerp(prevY, mouseY, tt),
         life: 255,
         size: map(speed, 0, 30, 5, 18, true)
       });
@@ -208,12 +211,12 @@ if (currentLoop) currentLoop.rate(pitch);
   // desenhar rasto
   noStroke();
   for (let i = trail.length - 1; i >= 0; i--) {
-    let t = trail[i];
+    let tr = trail[i];
     let col = currentLoopIndex !== -1 ? loopColors[currentLoopIndex] : [0, 0, 0];
-    fill(col[0], col[1], col[2], t.life);
-    ellipse(t.x, t.y, t.size, t.size);
-    t.life -= 4;
-    if (t.life <= 0) trail.splice(i, 1);
+    fill(col[0], col[1], col[2], tr.life);
+    ellipse(tr.x, tr.y, tr.size, tr.size);
+    tr.life -= 4;
+    if (tr.life <= 0) trail.splice(i, 1);
   }
 }
 
@@ -234,7 +237,7 @@ function mousePressed() {
     let s = random(agudos);
     s.stop();
     s.pan(constrain(nx, -1, 1));
-    s.setVolume(0.45); // ~ -5 dB
+    s.setVolume(0.45);
     s.play();
 
     stopCurrentLoop();
