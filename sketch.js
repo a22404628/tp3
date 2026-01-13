@@ -141,7 +141,8 @@ function draw() {
 
   // contorno da elipse
   noFill();
-  stroke(0);
+  stroke(57, 255, 20);
+  strokeWeight(3)
   ellipse(centerX, centerY, radiusX * 2, radiusY * 2);
 
   // marcador do centro (estado base)
@@ -245,3 +246,4 @@ function stopCurrentLoop() {
     currentLoopIndex = -1;
   }
 }
+
