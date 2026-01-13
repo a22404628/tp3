@@ -85,6 +85,7 @@ function windowResized() {
   const h = holder.offsetHeight || windowHeight;
   resizeCanvas(w, h);
   calculateEllipse();
+  }
   function setup() {
   const holder = document.getElementById("sketch-holder");
   const w = holder.offsetWidth || windowWidth;
@@ -257,5 +258,3 @@ function stopCurrentLoop() {
     currentLoopIndex = -1;
   }
 }
-
-
